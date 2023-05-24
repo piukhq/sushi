@@ -10,5 +10,5 @@ COPY --from=build /src/dist/*.whl .
 RUN pip install *.whl && rm *.whl
 
 
-# ENTRYPOINT [ "linkerd-await", "--" ]
+ENTRYPOINT [ "linkerd-await", "--" ]
 CMD [ "/usr/local/bin/sushictl", "upload" ]
