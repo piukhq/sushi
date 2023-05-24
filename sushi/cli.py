@@ -29,4 +29,3 @@ def archive(host, port, username, key_name, chunk_size):
     s = sftpTransfer(username, host, port, key_name, chunk_size=chunk_size)
     s.archive_sftp_file()
     s.delete_blob()
-

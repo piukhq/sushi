@@ -13,7 +13,9 @@ from sushi.settings import settings
 
 
 class sftpTransfer:
-    def __init__(self, host, port, username, chunk_size, key_name, import_container = None, archive_container = None, dir = None):
+    def __init__(
+        self, host, port, username, chunk_size, key_name, import_container=None, archive_container=None, dir=None
+    ):
         self.vault_url = settings.vault_url
         self.dir = dir if dir else settings.sftp_dir
         self.host = host if host else settings.sftp_host
@@ -23,7 +25,6 @@ class sftpTransfer:
         self.chunk_size = chunk_size if chunk_size else settings.chunk_size
         self.import_container = import_container if import_container else settings.import_container
         self.archive_container = archive_container if archive_container else settings.archive_container
-
 
     def vault_client(self):
         vault_credential = DefaultAzureCredential()
@@ -37,15 +38,15 @@ class sftpTransfer:
     def get_storage_key(self) -> str:
         return json.loads(self.vault_client())["connection_string"]
 
-    def sftp_client(self, host: str, port: int, username: str) -> paramiko.SFTPClient:
+    def sftp_client(self) -> paramiko.SFTPClient:
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         key = paramiko.RSAKey.from_private_key(self.get_sftp_key())
-        ssh.connect(host, port=port, username=username, pkey=key)
+        ssh.connect(self.host, port=self.port, username=self.username, pkey=key)
         return ssh.open_sftp()
 
     def split_file(self, file) -> None:
-        s = self.sftp_client(host=self.host, port=self.port, username=self.username)
+        s = self.sftp_client()
         sftp_dir = self.dir
         chunk_size = self.chunk_size
         output = None
@@ -73,12 +74,12 @@ class sftpTransfer:
 
     def archive_sftp_file(self) -> None:
         sftp_dir = self.dir
-        s = self.sftp_client(host=self.host, port=self.port, username=self.username)
+        s = self.sftp_client()
         for time in ["YYYY", "YYYY/MM", "YYYY/MM/DD"]:
             try:
                 directory = pendulum.today().format(time)
                 s.mkdir(f"archive/{directory}")
-            except IOError as e:
+            except IOError:
                 continue
         for i in s.listdir(sftp_dir):
             s.rename(f"/upload/{i}", f"/archive/{pendulum.today().format('YYYY/MM/DD')}/{i}")
@@ -105,7 +106,7 @@ class sftpTransfer:
             container_client.delete_blob(i)
 
     def run(self):
-        s = self.sftp_client(host=self.host, port=self.port, username=self.username)
+        s = self.sftp_client()
         sftp_dir = self.dir
         blob_container = self.import_container
         for i in s.listdir(sftp_dir):
@@ -115,7 +116,7 @@ class sftpTransfer:
             self.archive_blob(filename=i, data=data)
             self.split_file(i)
 
-        for i in s.listdir('chunks/'):
+        for i in s.listdir("chunks/"):
             data = BytesIO()
             s.getfo(f"chunks/{i}", data)
             data.seek(0)
