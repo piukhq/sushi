@@ -17,4 +17,3 @@ def cli():
 def upload(username, host, port, key_name, chunk_size):
     s = sftpTransfer(host=host, username=username, port=port, key_name=key_name, chunk_size=chunk_size)
     s.run()
-
